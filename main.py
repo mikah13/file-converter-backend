@@ -92,10 +92,12 @@ async def download(uuid: str):
     # return response
 
 
-@app.post("/upload")
-async def upload_file(file: UploadFile, format: str, uuid: str):
+@app.post("/convert")
+async def upload_file(file: UploadFile, format: str, quality: int, uuid: str):
     if not file:
         return {"message": "No upload file sent"}
+    if not quality:
+        quality = 95
 
     # return message
     if not format:
@@ -103,7 +105,7 @@ async def upload_file(file: UploadFile, format: str, uuid: str):
     original_image = Image.open(file.file)
     converted_image = BytesIO()
     original_image.save(
-        converted_image, image_formats[format], optimize=True, quality=95
+        converted_image, image_formats[format], optimize=True, quality=quality
     )
 
     response = StreamingResponse(converted_image, media_type="image/" + format)
