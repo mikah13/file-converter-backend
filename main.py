@@ -5,6 +5,7 @@ from io import BytesIO
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
+import zipfile
 
 app = FastAPI()
 
@@ -54,7 +55,7 @@ async def get_supported_extensions():
 
 
 @app.get("/metadata")
-async def upload_metadata(format: str):
+async def upload_metadata():
     if format not in image_formats:
         return {"message": "Invalid format"}
     str_uuid = str(uuid.uuid4())
@@ -63,14 +64,25 @@ async def upload_metadata(format: str):
     return message
 
 
+@app.get("/uuid")
+async def get_uuid():
+    str_uuid = str(uuid.uuid4())
+    process[str_uuid] = []
+    return {"uuid": str_uuid}
+
+
+@app.get("/download/{uuid}")
+async def download(uuid: str):
+    if uuid not in process:
+        return {"message": "UUID not found"}
+    return process.get(uuid)
+
+
 @app.post("/upload")
-async def upload_file(file: UploadFile, format):
+async def upload_file(file: UploadFile, format: str, uuid: str):
     if not file:
         return {"message": "No upload file sent"}
 
-    # str_uuid = str(uuid.uuid4())
-    # message = {"uuid": str_uuid, "format": format}
-    # process[str_uuid] = {"uuid": str_uuid, "format": format}
     # return message
     if not format:
         format = "png"
@@ -79,6 +91,10 @@ async def upload_file(file: UploadFile, format):
     original_image.save(
         converted_image, image_formats[format], optimize=True, quality=95
     )
+    if uuid in process:
+        process[uuid].append(converted_image)
+    else:
+        process[uuid] = [converted_image]
     converted_image.seek(0)
 
     return StreamingResponse(converted_image, media_type="image/" + format)
