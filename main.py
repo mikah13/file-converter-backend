@@ -6,6 +6,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import zipfile
+import os
+from prisma import Prisma
 
 app = FastAPI()
 
@@ -93,38 +95,46 @@ async def download(uuid: str):
 
 
 @app.post("/convert")
-async def upload_file(file: UploadFile, format: str, quality: int):
+async def upload_file(file: UploadFile , format: str, quality: int):
     if not file:
         return {"message": "No upload file sent"}
-    
+
     if not quality:
         quality = 50
     if quality > 100:
         quality = 100
     if quality < 0:
         quality = 0
-
+    image_quality = 50 + int(quality / 2)
+    
+    # Getting file size
+    fs = await file.read()
+    file_size = len(fs)
+    
     # return message
     if not format:
         format = "png"
     original_image = Image.open(file.file)
     converted_image = BytesIO()
     original_image.save(
-        converted_image, image_formats[format], optimize=True, quality=50 + quality / 2
+        converted_image, image_formats[format], optimize=True, quality=image_quality
     )
+
+    prisma = Prisma()
+    await prisma.connect()
+
+    # write your queries here
+    file = await prisma.file.create(
+        data={
+            "size": file_size,
+        },
+    )
+
+    await prisma.disconnect()
 
     response = StreamingResponse(converted_image, media_type="image/" + format)
 
-    # save_data = {
-    #     "image": converted_image.getvalue(),
-    #     "format": format,
-    #     "filename": file.filename,
-    # }
 
-    # if uuid in process:
-    #     process[uuid].append(save_data)
-    # else:
-    #     process[uuid] = [save_data]
 
     converted_image.seek(0)
 
