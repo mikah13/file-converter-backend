@@ -8,6 +8,7 @@ import uuid
 import zipfile
 import os
 from prisma import Prisma
+from prisma.models import FileSize
 
 app = FastAPI()
 
@@ -94,8 +95,21 @@ async def download(uuid: str):
     # return response
 
 
+@app.get("/file-count")
+async def get_file_count():
+    prisma = Prisma()
+    await prisma.connect()
+
+    # write your queries here
+    count = await prisma.file.count()
+
+    await prisma.disconnect()
+
+    return count
+
+
 @app.post("/convert")
-async def upload_file(file: UploadFile , format: str, quality: int):
+async def upload_file(file: UploadFile, format: str, quality: int):
     if not file:
         return {"message": "No upload file sent"}
 
@@ -106,11 +120,11 @@ async def upload_file(file: UploadFile , format: str, quality: int):
     if quality < 0:
         quality = 0
     image_quality = 50 + int(quality / 2)
-    
+
     # Getting file size
     fs = await file.read()
     file_size = len(fs)
-    
+
     # return message
     if not format:
         format = "png"
@@ -123,7 +137,6 @@ async def upload_file(file: UploadFile , format: str, quality: int):
     prisma = Prisma()
     await prisma.connect()
 
-    # write your queries here
     file = await prisma.file.create(
         data={
             "size": file_size,
@@ -133,8 +146,6 @@ async def upload_file(file: UploadFile , format: str, quality: int):
     await prisma.disconnect()
 
     response = StreamingResponse(converted_image, media_type="image/" + format)
-
-
 
     converted_image.seek(0)
 
