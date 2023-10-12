@@ -7,8 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import zipfile
 import os
-from prisma import Prisma
-from prisma.models import FileSize
 
 app = FastAPI()
 
@@ -95,19 +93,6 @@ async def download(uuid: str):
     # return response
 
 
-@app.get("/file-count")
-async def get_file_count():
-    prisma = Prisma()
-    await prisma.connect()
-
-    # write your queries here
-    count = await prisma.file.count()
-
-    await prisma.disconnect()
-
-    return count
-
-
 @app.post("/convert")
 async def upload_file(file: UploadFile, format: str, quality: int):
     if not file:
@@ -133,17 +118,6 @@ async def upload_file(file: UploadFile, format: str, quality: int):
     original_image.save(
         converted_image, image_formats[format], optimize=True, quality=image_quality
     )
-
-    prisma = Prisma()
-    await prisma.connect()
-
-    file = await prisma.file.create(
-        data={
-            "size": file_size,
-        },
-    )
-
-    await prisma.disconnect()
 
     response = StreamingResponse(converted_image, media_type="image/" + format)
 
