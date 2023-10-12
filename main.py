@@ -106,10 +106,6 @@ async def upload_file(file: UploadFile, format: str, quality: int):
         quality = 0
     image_quality = 50 + int(quality / 2)
 
-    # Getting file size
-    fs = await file.read()
-    file_size = len(fs)
-
     # return message
     if not format:
         format = "png"
@@ -124,11 +120,3 @@ async def upload_file(file: UploadFile, format: str, quality: int):
     converted_image.seek(0)
 
     return response
-
-
-def get_image_buffer(image):
-    img_buffer = BytesIO()
-    image.save(img_buffer, "PNG")
-    img_buffer.seek(0)
-
-    return img_buffer
