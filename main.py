@@ -8,6 +8,7 @@ import uuid
 import zipfile
 import os
 import numpy as np
+import PIL
 
 app = FastAPI()
 
@@ -125,44 +126,19 @@ async def upload_file(file: UploadFile, format: str, quality: int):
 
 @app.post("/compress")
 async def compress(file: UploadFile, format: str):
-    if not file:
-        return {"message": "No upload file sent"}
-    original_image = Image.open(file.file)
-    image = np.asarray(original_image) / 255
-    w, h, d = image.shape
-    # Get the feature matrix X
-    X = image.reshape((w * h, d))
-    K = 40  # the number of colors in the image
-    colors, _ = find_k_means(X, K, max_iters=20)
-    idx = find_closest_centroids(X, colors)
-    idx = np.array(idx, dtype=np.uint8)
-    X_reconstructed = np.array(colors[idx, :] * 255, dtype=np.uint8).reshape((w, h, d))
-    compressed_image = Image.fromarray(X_reconstructed)
-    processed_image = BytesIO()
-    compressed_image.save(processed_image, optimize=True)
 
-    response = StreamingResponse(processed_image, media_type="image/" + format)
+    base_width = 720
+    image = Image.open(file.file)
+    width_percent = base_width / float(image.size[0])
+    hsize = int((float(image.size[1]) * float(width_percent)))
+    image = image.resize((base_width, hsize), PIL.Image.LANCZOS)
+    compressed_image = BytesIO()
+    image.save(compressed_image, format, optimize=True)
 
-    processed_image.seek(0)
+    response = StreamingResponse(compressed_image)
+
+    compressed_image.seek(0)
+
     return response
 
 
-# Compression algorithm
-
-
-def initialize_K_centroids(X, K):
-    """Choose K points from X at random"""
-    m = len(X)
-    return X[np.random.choice(m, K, replace=False), :]
-
-
-def find_closest_centroids(X, centroids):
-    return c
-
-
-def compute_means(X, idx, K):
-    return centroids
-
-
-def find_k_means(X, K, max_iters=10):
-    return centroids, idx
