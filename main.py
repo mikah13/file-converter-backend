@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import zipfile
 import os
-import numpy as np
 import PIL
 
 app = FastAPI()
@@ -100,12 +99,6 @@ async def upload_file(file: UploadFile, format: str, quality: int):
     if not file:
         return {"message": "No upload file sent"}
 
-    if not quality:
-        quality = 50
-    if quality > 100:
-        quality = 100
-    if quality < 0:
-        quality = 0
     image_quality = 50 + int(quality / 2)
 
     # return message
@@ -125,20 +118,31 @@ async def upload_file(file: UploadFile, format: str, quality: int):
 
 
 @app.post("/compress")
-async def compress(file: UploadFile, format: str):
+async def compress(file: UploadFile, format: str, quality: int):
+    if not file:
+        return {"message": "No upload file sent"}
 
+    if not format:
+        format = "jpg"
+    if not quality:
+        quality = 50
+    if quality > 100:
+        quality = 100
+    if quality < 0:
+        quality = 0
+    image_quality = 25 + int(quality / 2)
     base_width = 720
     image = Image.open(file.file)
     width_percent = base_width / float(image.size[0])
     hsize = int((float(image.size[1]) * float(width_percent)))
     image = image.resize((base_width, hsize), PIL.Image.LANCZOS)
     compressed_image = BytesIO()
-    image.save(compressed_image, format, optimize=True)
+    image.save(
+        compressed_image, image_formats[format], optimize=True, quality=image_quality
+    )
 
     response = StreamingResponse(compressed_image)
 
     compressed_image.seek(0)
 
     return response
-
-
