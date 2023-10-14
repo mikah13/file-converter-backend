@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import zipfile
 import os
+import numpy as np
 
 app = FastAPI()
 
@@ -120,3 +121,48 @@ async def upload_file(file: UploadFile, format: str, quality: int):
     converted_image.seek(0)
 
     return response
+
+
+@app.post("/compress")
+async def compress(file: UploadFile, format: str):
+    if not file:
+        return {"message": "No upload file sent"}
+    original_image = Image.open(file.file)
+    image = np.asarray(original_image) / 255
+    w, h, d = image.shape
+    # Get the feature matrix X
+    X = image.reshape((w * h, d))
+    K = 40  # the number of colors in the image
+    colors, _ = find_k_means(X, K, max_iters=20)
+    idx = find_closest_centroids(X, colors)
+    idx = np.array(idx, dtype=np.uint8)
+    X_reconstructed = np.array(colors[idx, :] * 255, dtype=np.uint8).reshape((w, h, d))
+    compressed_image = Image.fromarray(X_reconstructed)
+    processed_image = BytesIO()
+    compressed_image.save(processed_image, optimize=True)
+
+    response = StreamingResponse(processed_image, media_type="image/" + format)
+
+    processed_image.seek(0)
+    return response
+
+
+# Compression algorithm
+
+
+def initialize_K_centroids(X, K):
+    """Choose K points from X at random"""
+    m = len(X)
+    return X[np.random.choice(m, K, replace=False), :]
+
+
+def find_closest_centroids(X, centroids):
+    return c
+
+
+def compute_means(X, idx, K):
+    return centroids
+
+
+def find_k_means(X, K, max_iters=10):
+    return centroids, idx
