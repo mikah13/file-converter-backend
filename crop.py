@@ -8,10 +8,10 @@ im = Image.open('test/pic1.png')
 width, height = im.size
  
 # Setting the points for cropped image
-left = 5
-top = height / 4
-right = 164
-bottom = 3 * height / 4
+left = width / 2
+top = 0
+right = 3 *  width / 2 
+bottom = height
  
 # Cropped image of above dimension
 # (It will not change original image)
