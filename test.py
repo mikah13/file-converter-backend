@@ -6,22 +6,33 @@ collage_width = 800
 collage_height = 600
 
 # Create a blank canvas for the collage
-collage = Image.new('RGB', (collage_width, collage_height))
+collage = Image.new("RGB", (collage_width, collage_height))
 
 # List of image paths
-image_paths = ["image1.jpg", "image2.jpg", "image3.jpg"]
+image_paths = [
+    "./test/pic1.png",
+    "./test/pic2.png",
+    "./test/pic3.png",
+    "./test/pic4.png",
+]
+
+# Calculate the dimensions of each image in the collage
+num_images = len(image_paths)
+image_width = collage_width // num_images
+image_height = collage_height
 
 # Open and paste each image onto the collage
-x, y = 0, 0
+x = 0
 for image_path in image_paths:
     image = Image.open(image_path)
-    collage.paste(image, (x, y))
-    
-    # Update the x and y coordinates for the next image
-    x += image.width
-    if x >= collage_width:
-        x = 0
-        y += image.height
+
+    # Resize the image while maintaining its aspect ratio
+    image.thumbnail((image_width, image_height))
+
+    # Paste the resized image onto the collage
+    collage.paste(image, (x, 0))
+
+    x += image_width
 
 # Save the collage
 collage.save("image_collage.jpg")
