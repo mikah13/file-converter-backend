@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Union
 from PIL import Image
 from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from io import BytesIO
@@ -8,6 +8,7 @@ import uuid
 import zipfile
 import os
 import PIL
+from collage import make_collage
 
 app = FastAPI()
 
@@ -146,3 +147,15 @@ async def compress(file: UploadFile, format: str, quality: int):
     compressed_image.seek(0)
 
     return response
+
+
+@app.post("/collage")
+async def create_collage(files: List[UploadFile], width: int, height: int):
+    if not files:
+        return {"message": "No upload file sent"}
+    
+    collage_image = make_collage(files, 'test.png', width, height)
+    byte_image = BytesIO()
+    collage_image.save(byte_image, format="PNG", optimize=True)
+    byte_image.seek(0)
+    return StreamingResponse(byte_image, media_type="image/png")
